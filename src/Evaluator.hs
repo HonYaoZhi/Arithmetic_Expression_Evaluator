@@ -1,8 +1,6 @@
 module Evaluator where
 
-import System.Environment (getArgs, getEnv)
 import Data.Char (isDigit, isSpace)
-import Control.Exception (catch, SomeException)
 
 -- Tokenize the input string into tokens
 tokenize :: String -> [String]
@@ -73,20 +71,3 @@ eval (Add a b) = eval a + eval b
 eval (Sub a b) = eval a - eval b
 eval (Mul a b) = eval a * eval b
 eval (Div a b) = eval a / eval b
-
--- Main CLI loop
-main :: IO ()
-main = do
-  secret <- catch (getEnv "SECRET_MODIFIER")
-                (\(_ :: SomeException) -> return "1.0")
-  args <- getArgs
-  if null args
-    then putStrLn "Usage: evaluator \"expression\""
-    else do
-      let tokens = tokenize (head args)
-      case parseExpr tokens of
-        Nothing -> putStrLn "Parse error"
-        Just expr -> do
-          let result = eval expr * read secret
-          print result
-
