@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cabal build:*)",
+      "Bash(cabal run:*)",
+      "Bash(tree:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
