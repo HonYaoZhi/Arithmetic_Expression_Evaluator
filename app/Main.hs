@@ -3,6 +3,8 @@
 module Main where
 
 import Evaluator
+import Parser
+import Tokenizer
 import System.Environment (getArgs, getEnv)
 import Control.Exception (catch, SomeException)
 
