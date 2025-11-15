@@ -12,6 +12,11 @@ It implements a recursive descent parser with proper operator precedence:
 - Addition, Subtraction (lowest)
 
 All operators are left-associative.
+
+Enhanced with:
+- Higher-order functions
+- Point-free style with Kleisli composition
+- Folding pattern for operators
 -}
 
 module Expr.Parser
@@ -21,66 +26,86 @@ module Expr.Parser
 import Expr.Types (Expr(..), Token)
 import Text.Read (readMaybe)
 
+-- | Kleisli composition for Either monad (point-free style)
+(>=>) :: (a -> Either e b) -> (b -> Either e c) -> (a -> Either e c)
+f >=> g = \x -> f x >>= g
+
 -- | Parse a list of tokens into an expression tree
--- Returns Left with error message on failure, Right with Expr on success
+-- Uses Kleisli composition (>=>) for cleaner monadic flow
 parseExpr :: [Token] -> Either String Expr
 parseExpr [] = Left "Empty expression"
-parseExpr ts =
-  case parseAddSub ts of
-    Right (expr, []) -> Right expr
-    Right (_, remaining) -> Left $ "Unexpected tokens: " ++ show remaining
-    Left err -> Left err
+parseExpr ts = parseAddSub ts >>= checkNoRemaining
+  where
+    checkNoRemaining (expr, []) = Right expr
+    checkNoRemaining (_, remaining) = Left $ "Unexpected tokens: " ++ show remaining
 
 -- | Parse addition and subtraction (lowest precedence, left-associative)
 parseAddSub :: [Token] -> Either String (Expr, [Token])
-parseAddSub ts = do
-  (left, rest1) <- parseMulDiv ts
-  parseAddSubCont left rest1
+parseAddSub = parseBinary parseMulDiv operators
   where
-    parseAddSubCont :: Expr -> [Token] -> Either String (Expr, [Token])
-    parseAddSubCont left [] = Right (left, [])
-    parseAddSubCont left (op:rest)
-      | op == "+" = do
-          (right, rest2) <- parseMulDiv rest
-          parseAddSubCont (Add left right) rest2
-      | op == "-" = do
-          (right, rest2) <- parseMulDiv rest
-          parseAddSubCont (Sub left right) rest2
-      | otherwise = Right (left, op:rest)
+    operators = [("+", Add), ("-", Sub)]
 
 -- | Parse multiplication and division (higher precedence, left-associative)
 parseMulDiv :: [Token] -> Either String (Expr, [Token])
-parseMulDiv ts = do
-  (left, rest1) <- parseFactor ts
-  parseMulDivCont left rest1
+parseMulDiv = parseBinary parseFactor operators
   where
-    parseMulDivCont :: Expr -> [Token] -> Either String (Expr, [Token])
-    parseMulDivCont left [] = Right (left, [])
-    parseMulDivCont left (op:rest)
-      | op == "*" = do
-          (right, rest2) <- parseFactor rest
-          parseMulDivCont (Mul left right) rest2
-      | op == "/" = do
-          (right, rest2) <- parseFactor rest
-          parseMulDivCont (Div left right) rest2
-      | otherwise = Right (left, op:rest)
+    operators = [("*", Mul), ("/", Div)]
+
+-- | Higher-order function: Generic binary operator parser
+-- Uses folding pattern with recursion for left-associativity
+parseBinary :: ([Token] -> Either String (Expr, [Token]))     -- Next precedence level
+            -> [(String, Expr -> Expr -> Expr)]               -- Operator table
+            -> [Token]                                         -- Input tokens
+            -> Either String (Expr, [Token])
+parseBinary nextLevel ops = nextLevel >=> uncurry foldOperators
+  where
+    -- Fold over operators at this level (tail recursive)
+    foldOperators :: Expr -> [Token] -> Either String (Expr, [Token])
+    foldOperators expr [] = Right (expr, [])
+    foldOperators expr tokens@(t:ts) =
+      maybe (Right (expr, tokens)) (applyOperator expr ts) (lookup t ops)
+
+    applyOperator expr ts constructor =
+      nextLevel ts >>= \(right, rest) ->
+        foldOperators (constructor expr right) rest
 
 -- | Parse factors: numbers and parenthesized expressions (highest precedence)
 parseFactor :: [Token] -> Either String (Expr, [Token])
 parseFactor [] = Left "Expected expression, got end of input"
-parseFactor ("(":ts) =
-  case ts of
-    (")":_) -> Left "Empty parentheses are not allowed"
-    _ -> do
-      (expr, rest1) <- parseAddSub ts
-      case rest1 of
-        (")":rest2) -> Right (expr, rest2)
-        [] -> Left "Missing closing parenthesis"
-        (t:_) -> Left $ "Expected ')', got: " ++ t
+parseFactor ("(":ts) = parseParenthesized ts
 parseFactor (t:ts)
-  | t `elem` ["+", "-", "*", "/", "(", ")"] =
-      Left $ "Expected number or '(', got operator: " ++ t
-  | otherwise =
-      case readMaybe t :: Maybe Double of
-        Just n -> Right (Num n, ts)
-        Nothing -> Left $ "Invalid number: " ++ t
+  | isOperator t = operatorError t
+  | otherwise = parseNumber t ts
+
+-- | Parse parenthesized expression
+-- Uses Kleisli composition for clean pipeline
+parseParenthesized :: [Token] -> Either String (Expr, [Token])
+parseParenthesized = checkEmpty >=> parseAddSub >=> checkClosing
+  where
+    checkEmpty (")":_) = Left "Empty parentheses are not allowed"
+    checkEmpty ts = Right ts
+
+    checkClosing (expr, (")":rest)) = Right (expr, rest)
+    checkClosing (_, []) = Left "Missing closing parenthesis"
+    checkClosing (_, (t:_)) = Left $ "Expected ')', got: " ++ t
+
+-- | Parse a number token
+parseNumber :: String -> [Token] -> Either String (Expr, [Token])
+parseNumber t ts = do
+  n <- maybeToEither (readMaybe t) ("Invalid number: " ++ t)
+  Right (Num n, ts)
+
+-- | Helper: Convert Maybe to Either (reusable)
+maybeToEither :: Maybe a -> String -> Either String a
+maybeToEither Nothing err = Left err
+maybeToEither (Just x) _ = Right x
+
+-- | Error for unexpected operator (point-free style)
+operatorError :: String -> Either String a
+operatorError = Left . ("Expected number or '(', got operator: " ++)
+
+-- | Check if a token is an operator (point-free style)
+isOperator :: String -> Bool
+isOperator = (`elem` operators)
+  where
+    operators = ["+", "-", "*", "/", "(", ")"]

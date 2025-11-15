@@ -11,6 +11,11 @@ It handles:
 - Operators (+, -, *, /)
 - Parentheses
 - Whitespace
+
+Enhanced with:
+- Pre-filtering with filter (higher-order function)
+- Point-free style
+- Function composition
 -}
 
 module Expr.Tokenizer
@@ -21,43 +26,82 @@ import Expr.Types (Token)
 import Data.Char (isDigit, isSpace)
 
 -- | Tokenize an input string into a list of tokens
--- Returns Left with error message on failure, Right with token list on success
+-- Enhanced: Pre-filter whitespace using filter (higher-order function)
 tokenize :: String -> Either String [Token]
-tokenize input = tokenize' input True  -- Start with True to allow leading negative numbers
+tokenize input = tokenizeFiltered True (filterSpaces input)
   where
-    tokenize' :: String -> Bool -> Either String [Token]
-    tokenize' [] _ = Right []
-    tokenize' s@(c:cs) afterOperator
-      | isSpace c = tokenize' cs afterOperator
-      | c `elem` "+-*/()" =
-          if c == '-' && afterOperator && not (null cs) && (isDigit (head cs) || head cs == '.') then
-            -- Negative number after operator or at start
-            let (num, rest) = spanNumber cs
-            in case num of
-                 "" -> Left "Invalid negative number"
-                 _ -> fmap (("-" ++ num) :) (tokenize' rest False)
-          else
-            -- Regular operator
-            fmap ([c] :) (tokenize' cs (c `elem` "+-*/(" ))
-      | isDigit c || c == '.' =
-          let (num, rest) = spanNumber s
-          in case num of
-               "" -> Left "Invalid number"
-               _ -> if isValidNumber num
-                    then fmap (num :) (tokenize' rest False)
-                    else Left $ "Invalid number format: " ++ num
-      | otherwise = Left $ "Invalid character: " ++ [c]
+    -- Pre-filter using higher-order function (point-free style)
+    filterSpaces :: String -> String
+    filterSpaces = filter (not . isSpace)
 
-    -- | Span a number including optional decimal point
-    spanNumber :: String -> (String, String)
-    spanNumber s =
-      let (intPart, rest1) = span isDigit s
-      in case rest1 of
-           ('.':rest2) ->
-             let (fracPart, rest3) = span isDigit rest2
-             in (intPart ++ "." ++ fracPart, rest3)
-           _ -> (intPart, rest1)
+    tokenizeFiltered :: Bool -> String -> Either String [Token]
+    tokenizeFiltered _ [] = Right []
+    tokenizeFiltered afterOp s@(c:cs)
+      | isOperatorChar c = handleOperator afterOp c cs
+      | isNumberStart c  = handleNumber s afterOp
+      | otherwise        = invalidChar c
 
-    -- | Validate number format (must have at least one digit)
-    isValidNumber :: String -> Bool
-    isValidNumber num = any isDigit num
+    -- Handle operator or negative number
+    handleOperator :: Bool -> Char -> String -> Either String [Token]
+    handleOperator afterOp '-' cs
+      | afterOp && canBeNegative cs = tokenizeNegative cs
+      | otherwise = consOperator '-' cs
+    handleOperator _ c cs = consOperator c cs
+
+    -- Tokenize negative number
+    tokenizeNegative :: String -> Either String [Token]
+    tokenizeNegative cs =
+      let (num, rest) = spanNumber cs
+      in if null num
+         then Left "Invalid negative number"
+         else (("-" ++ num) :) <$> tokenizeFiltered False rest
+
+    -- Cons an operator token (using <$> for functor mapping)
+    consOperator :: Char -> String -> Either String [Token]
+    consOperator c cs = ([c] :) <$> tokenizeFiltered (isOpenOperator c) cs
+
+    -- Handle number
+    handleNumber :: String -> Bool -> Either String [Token]
+    handleNumber s _ =
+      let (num, rest) = spanNumber s
+      in if isValidNumber num
+         then (num :) <$> tokenizeFiltered False rest
+         else Left $ "Invalid number format: " ++ num
+
+-- | Span a number including optional decimal point
+-- Uses function composition
+spanNumber :: String -> (String, String)
+spanNumber = spanWithDecimal . span isDigit
+  where
+    spanWithDecimal (intPart, '.':rest) =
+      let (fracPart, remaining) = span isDigit rest
+      in (intPart ++ "." ++ fracPart, remaining)
+    spanWithDecimal result = result
+
+-- | Validate number format (must have at least one digit)
+-- Point-free style using any
+isValidNumber :: String -> Bool
+isValidNumber = any isDigit
+
+-- | Check if character is operator (point-free style)
+isOperatorChar :: Char -> Bool
+isOperatorChar = (`elem` "+-*/()")
+
+-- | Check if character can start a number
+isNumberStart :: Char -> Bool
+isNumberStart c = isDigit c || c == '.'
+
+-- | Check if next chars can form a negative number
+canBeNegative :: String -> Bool
+canBeNegative [] = False
+canBeNegative (c:_) = isDigit c || c == '.'
+
+-- | Check if operator leaves parser in "after operator" state
+-- Point-free style
+isOpenOperator :: Char -> Bool
+isOpenOperator = (`elem` "+-*/(")
+
+-- | Error for invalid character
+-- Point-free style with function composition
+invalidChar :: Char -> Either String a
+invalidChar = Left . ("Invalid character: " ++) . (:[])
