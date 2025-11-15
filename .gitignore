@@ -1,0 +1,22 @@
+# Haskell compiled files
+*.hi
+*.o
+*.exe
+evaluator
+evaluator.exe
+
+# GHC
+.ghc.environment.*
+dist/
+dist-newstyle/
+cabal-dev/
+
+# Stack
+.stack-work/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
