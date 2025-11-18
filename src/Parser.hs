@@ -22,11 +22,13 @@ parseAddSub ts = do
 parseMulDiv :: [String] -> Maybe (Expr, [String])
 parseMulDiv ts = do
   (e, rest) <- parseFactor ts
-  case rest of
-    (op:rest') | op `elem` ["*", "/"] -> do
-      (e', rest'') <- parseMulDiv rest'
-      return (if op == "*" then Mul e e' else Div e e', rest'')
-    _ -> return (e, rest)
+  parseMore e rest
+  where
+    parseMore e (op:ts') | op `elem` ["*", "/"] = do
+      (e2, rest2) <- parseFactor ts'
+      let newE = if op == "*" then Mul e e2 else Div e e2
+      parseMore newE rest2
+    parseMore e rest = Just (e, rest)
 
 parseFactor :: [String] -> Maybe (Expr, [String])
 parseFactor [] = Nothing
