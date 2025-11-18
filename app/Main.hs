@@ -20,6 +20,8 @@ main = do
       let tokens = tokenize (head args)
       case parseExpr tokens of
         Nothing -> putStrLn "Parse error"
-        Just expr -> do
-          let result = eval expr * read secret
-          print result
+        Just expr -> case eval expr of
+            Left err     -> putStrLn err
+            Right val -> do
+              let result = val * read secret
+              print result
