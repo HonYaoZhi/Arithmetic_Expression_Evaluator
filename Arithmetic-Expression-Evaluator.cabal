@@ -124,4 +124,5 @@ test-suite Arithmetic-Expression-Evaluator-test
     -- Test dependencies.
     build-depends:
         base ^>=4.18.3.0,
-        Arithmetic-Expression-Evaluator
+        Arithmetic-Expression-Evaluator,
+        HUnit
