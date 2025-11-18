@@ -6,47 +6,35 @@ data Expr = Num Double | Add Expr Expr | Sub Expr Expr | Mul Expr Expr | Div Exp
 
 -- Parse tokens into an expression tree
 parseExpr :: [String] -> Maybe Expr
-parseExpr [] = Nothing
-parseExpr ts = parseAddSub ts []
+parseExpr ts = case parseAddSub ts of
+  Just (e, []) -> Just e
+  _ -> Nothing
 
-parseAddSub :: [String] -> [String] -> Maybe Expr
-parseAddSub ts acc = do
-  e <- parseMulDiv ts
-  let remaining = drop (tokensUsed e) ts
-  case remaining of
-    [] -> Just e
-    (op:rest) | op `elem` ["+", "-"] -> 
-      let next = parseAddSub rest (op:acc)
-      in case next of
-        Just e' -> if op == "+" then Just (Add e e') else Just (Sub e e')
-        Nothing -> Just e
-    _ -> Just e
+parseAddSub :: [String] -> Maybe (Expr, [String])
+parseAddSub ts = do
+  (e, rest) <- parseMulDiv ts
+  case rest of
+    (op:rest') | op `elem` ["+", "-"] -> do
+      (e', rest'') <- parseAddSub rest'
+      return (if op == "+" then Add e e' else Sub e e', rest'')
+    _ -> return (e, rest)
 
-parseMulDiv :: [String] -> Maybe Expr
+parseMulDiv :: [String] -> Maybe (Expr, [String])
 parseMulDiv ts = do
-  e <- parseFactor ts
-  let remaining = drop (tokensUsed e) ts
-  case remaining of
-    [] -> Just e
-    (op:rest) | op `elem` ["*", "/"] -> do
-      e' <- parseMulDiv rest
-      return $ if op == "*" then Mul e e' else Div e e'
-    _ -> Just e
+  (e, rest) <- parseFactor ts
+  parseMore e rest
+  where
+    parseMore e (op:ts') | op `elem` ["*", "/"] = do
+      (e2, rest2) <- parseFactor ts'
+      let newE = if op == "*" then Mul e e2 else Div e e2
+      parseMore newE rest2
+    parseMore e rest = Just (e, rest)
 
-parseFactor :: [String] -> Maybe Expr
+parseFactor :: [String] -> Maybe (Expr, [String])
 parseFactor [] = Nothing
 parseFactor ("(":ts) = do
-  e <- parseExpr ts
-  let rest = drop (tokensUsed e) ts
+  (e, rest) <- parseAddSub ts  -- Changed from parseExpr to parseAddSub
   case rest of
-    (")":rest') -> Just e
+    (")":rest') -> return (e, rest')
     _ -> Nothing
-parseFactor (t:ts) = Just $ Num (read t)
-
--- Estimate tokens used by an expression
-tokensUsed :: Expr -> Int
-tokensUsed (Num _) = 1
-tokensUsed (Add _ _) = 3
-tokensUsed (Sub _ _) = 3
-tokensUsed (Mul _ _) = 3
-tokensUsed (Div _ _) = 3
+parseFactor (t:ts) = Just (Num (read t), ts)
