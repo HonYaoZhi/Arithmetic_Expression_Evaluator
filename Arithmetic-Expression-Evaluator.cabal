@@ -11,7 +11,7 @@ cabal-version:      3.0
 --   http://haskell.org/cabal/users-guide/
 --
 -- The name of the package.
-name:               Arithmetic-Expression-Evaluator
+name:               ArithEval
 
 -- The package version.
 -- See the Haskell package versioning policy (PVP) for standards
@@ -75,7 +75,7 @@ library
     -- Base language which the package is written in.
     default-language: GHC2021
 
-executable Arithmetic-Expression-Evaluator
+executable ArithEval
     -- Import common warning flags.
     import:           warnings
 
@@ -91,7 +91,7 @@ executable Arithmetic-Expression-Evaluator
     -- Other library packages from which modules are imported.
     build-depends:
         base ^>=4.18.3.0,
-        Arithmetic-Expression-Evaluator
+        ArithEval
 
     -- Directories containing source files.
     hs-source-dirs:   app
@@ -99,7 +99,7 @@ executable Arithmetic-Expression-Evaluator
     -- Base language which the package is written in.
     default-language: Haskell2010
 
-test-suite Arithmetic-Expression-Evaluator-test
+test-suite ArithEval-test
     -- Import common warning flags.
     import:           warnings
 
@@ -124,5 +124,5 @@ test-suite Arithmetic-Expression-Evaluator-test
     -- Test dependencies.
     build-depends:
         base ^>=4.18.3.0,
-        Arithmetic-Expression-Evaluator,
+        ArithEval,
         HUnit

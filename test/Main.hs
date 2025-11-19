@@ -1,6 +1,7 @@
 module Main where
 
 import Test.HUnit
+import System.Exit (exitWith, ExitCode(..))
 import Tokenizer
 import Parser
 import Evaluator
@@ -247,56 +248,56 @@ testParserInvalid = TestList
 -- A. Addition Evaluation (5 tests)
 testEvalAddition :: Test
 testEvalAddition = TestList
-  [ "zero plus zero" ~: eval (Add (Num 0) (Num 0)) ~?= 0.0
-  , "positive addition" ~: eval (Add (Num 5) (Num 3)) ~?= 8.0
-  , "large addition" ~: eval (Add (Num 100) (Num 200)) ~?= 300.0
-  , "negative addition" ~: eval (Add (Num (-5)) (Num (-3))) ~?= (-8.0)
-  , "mixed signs" ~: eval (Add (Num 10) (Num (-3))) ~?= 7.0
+  [ "zero plus zero" ~: eval (Add (Num 0) (Num 0)) ~?= Right 0.0
+  , "positive addition" ~: eval (Add (Num 5) (Num 3)) ~?= Right 8.0
+  , "large addition" ~: eval (Add (Num 100) (Num 200)) ~?= Right 300.0
+  , "negative addition" ~: eval (Add (Num (-5)) (Num (-3))) ~?= Right (-8.0)
+  , "mixed signs" ~: eval (Add (Num 10) (Num (-3))) ~?= Right 7.0
   ]
 
 -- B. Subtraction Evaluation (5 tests)
 testEvalSubtraction :: Test
 testEvalSubtraction = TestList
-  [ "zero minus zero" ~: eval (Sub (Num 0) (Num 0)) ~?= 0.0
-  , "positive subtraction" ~: eval (Sub (Num 10) (Num 3)) ~?= 7.0
-  , "negative result" ~: eval (Sub (Num 5) (Num 10)) ~?= (-5.0)
-  , "large subtraction" ~: eval (Sub (Num 1000) (Num 500)) ~?= 500.0
-  , "double negative" ~: eval (Sub (Num (-5)) (Num (-3))) ~?= (-2.0)
+  [ "zero minus zero" ~: eval (Sub (Num 0) (Num 0)) ~?= Right 0.0
+  , "positive subtraction" ~: eval (Sub (Num 10) (Num 3)) ~?= Right 7.0
+  , "negative result" ~: eval (Sub (Num 5) (Num 10)) ~?= Right (-5.0)
+  , "large subtraction" ~: eval (Sub (Num 1000) (Num 500)) ~?= Right 500.0
+  , "double negative" ~: eval (Sub (Num (-5)) (Num (-3))) ~?= Right (-2.0)
   ]
 
 -- C. Multiplication Evaluation (5 tests)
 testEvalMultiplication :: Test
 testEvalMultiplication = TestList
-  [ "zero times number" ~: eval (Mul (Num 0) (Num 5)) ~?= 0.0
-  , "number times zero" ~: eval (Mul (Num 5) (Num 0)) ~?= 0.0
-  , "positive mult" ~: eval (Mul (Num 6) (Num 7)) ~?= 42.0
-  , "negative times positive" ~: eval (Mul (Num (-5)) (Num 3)) ~?= (-15.0)
-  , "negative times negative" ~: eval (Mul (Num (-4)) (Num (-5))) ~?= 20.0
+  [ "zero times number" ~: eval (Mul (Num 0) (Num 5)) ~?= Right 0.0
+  , "number times zero" ~: eval (Mul (Num 5) (Num 0)) ~?= Right 0.0
+  , "positive mult" ~: eval (Mul (Num 6) (Num 7)) ~?= Right 42.0
+  , "negative times positive" ~: eval (Mul (Num (-5)) (Num 3)) ~?= Right (-15.0)
+  , "negative times negative" ~: eval (Mul (Num (-4)) (Num (-5))) ~?= Right 20.0
   ]
 
 -- D. Division Evaluation (5 tests)
 testEvalDivision :: Test
 testEvalDivision = TestList
-  [ "simple division" ~: eval (Div (Num 10) (Num 2)) ~?= 5.0
-  , "division equals one" ~: eval (Div (Num 7) (Num 7)) ~?= 1.0
-  , "zero divided by number" ~: eval (Div (Num 0) (Num 5)) ~?= 0.0
-  , "large division" ~: eval (Div (Num 1000) (Num 10)) ~?= 100.0
-  , "negative division" ~: eval (Div (Num (-10)) (Num 2)) ~?= (-5.0)
+  [ "simple division" ~: eval (Div (Num 10) (Num 2)) ~?= Right 5.0
+  , "division equals one" ~: eval (Div (Num 7) (Num 7)) ~?= Right 1.0
+  , "zero divided by number" ~: eval (Div (Num 0) (Num 5)) ~?= Right 0.0
+  , "large division" ~: eval (Div (Num 1000) (Num 10)) ~?= Right 100.0
+  , "negative division" ~: eval (Div (Num (-10)) (Num 2)) ~?= Right (-5.0)
   ]
 
 -- E. Complex Nested Evaluation (5 tests)
 testEvalNested :: Test
 testEvalNested = TestList
   [ "add then mult" ~:
-      eval (Mul (Add (Num 2) (Num 3)) (Num 4)) ~?= 20.0
+      eval (Mul (Add (Num 2) (Num 3)) (Num 4)) ~?= Right 20.0
   , "mult then add" ~:
-      eval (Add (Mul (Num 2) (Num 3)) (Num 4)) ~?= 10.0
+      eval (Add (Mul (Num 2) (Num 3)) (Num 4)) ~?= Right 10.0
   , "three levels" ~:
-      eval (Mul (Add (Num 1) (Num 2)) (Sub (Num 5) (Num 3))) ~?= 6.0
+      eval (Mul (Add (Num 1) (Num 2)) (Sub (Num 5) (Num 3))) ~?= Right 6.0
   , "all operations" ~:
-      eval (Add (Mul (Num 2) (Num 3)) (Div (Num 10) (Num 2))) ~?= 11.0
+      eval (Add (Mul (Num 2) (Num 3)) (Div (Num 10) (Num 2))) ~?= Right 11.0
   , "deeply nested" ~:
-      eval (Div (Mul (Add (Num 1) (Num 2)) (Num 10)) (Num 5)) ~?= 6.0
+      eval (Div (Mul (Add (Num 1) (Num 2)) (Num 10)) (Num 5)) ~?= Right 6.0
   ]
 
 -- ============================================================================
@@ -308,43 +309,43 @@ testE2EBasic :: Test
 testE2EBasic = TestList
   [ "simple addition" ~:
       TestCase $ case parseExpr (tokenize "5 + 3") of
-        Just expr -> eval expr @?= 8.0
+        Just expr -> eval expr @?= Right 8.0
         Nothing -> assertFailure "Parse failed"
   , "simple subtraction" ~:
       TestCase $ case parseExpr (tokenize "10 - 4") of
-        Just expr -> eval expr @?= 6.0
+        Just expr -> eval expr @?= Right 6.0
         Nothing -> assertFailure "Parse failed"
   , "simple multiplication" ~:
       TestCase $ case parseExpr (tokenize "6 * 7") of
-        Just expr -> eval expr @?= 42.0
+        Just expr -> eval expr @?= Right 42.0
         Nothing -> assertFailure "Parse failed"
   , "simple division" ~:
       TestCase $ case parseExpr (tokenize "20 / 5") of
-        Just expr -> eval expr @?= 4.0
+        Just expr -> eval expr @?= Right 4.0
         Nothing -> assertFailure "Parse failed"
   , "zero addition" ~:
       TestCase $ case parseExpr (tokenize "0 + 0") of
-        Just expr -> eval expr @?= 0.0
+        Just expr -> eval expr @?= Right 0.0
         Nothing -> assertFailure "Parse failed"
   , "identity addition" ~:
       TestCase $ case parseExpr (tokenize "7 + 0") of
-        Just expr -> eval expr @?= 7.0
+        Just expr -> eval expr @?= Right 7.0
         Nothing -> assertFailure "Parse failed"
   , "identity multiplication" ~:
       TestCase $ case parseExpr (tokenize "9 * 1") of
-        Just expr -> eval expr @?= 9.0
+        Just expr -> eval expr @?= Right 9.0
         Nothing -> assertFailure "Parse failed"
   , "zero multiplication" ~:
       TestCase $ case parseExpr (tokenize "5 * 0") of
-        Just expr -> eval expr @?= 0.0
+        Just expr -> eval expr @?= Right 0.0
         Nothing -> assertFailure "Parse failed"
   , "self subtraction" ~:
       TestCase $ case parseExpr (tokenize "8 - 8") of
-        Just expr -> eval expr @?= 0.0
+        Just expr -> eval expr @?= Right 0.0
         Nothing -> assertFailure "Parse failed"
   , "self division" ~:
       TestCase $ case parseExpr (tokenize "12 / 12") of
-        Just expr -> eval expr @?= 1.0
+        Just expr -> eval expr @?= Right 1.0
         Nothing -> assertFailure "Parse failed"
   ]
 
@@ -353,35 +354,35 @@ testE2EPrecedence :: Test
 testE2EPrecedence = TestList
   [ "mult before add" ~:
       TestCase $ case parseExpr (tokenize "2 + 3 * 4") of
-        Just expr -> eval expr @?= 14.0
+        Just expr -> eval expr @?= Right 14.0
         Nothing -> assertFailure "Parse failed"
   , "mult before sub" ~:
       TestCase $ case parseExpr (tokenize "20 - 3 * 4") of
-        Just expr -> eval expr @?= 8.0
+        Just expr -> eval expr @?= Right 8.0
         Nothing -> assertFailure "Parse failed"
   , "div before add" ~:
       TestCase $ case parseExpr (tokenize "10 + 20 / 5") of
-        Just expr -> eval expr @?= 14.0
+        Just expr -> eval expr @?= Right 14.0
         Nothing -> assertFailure "Parse failed"
   , "div before sub" ~:
       TestCase $ case parseExpr (tokenize "15 - 10 / 2") of
-        Just expr -> eval expr @?= 10.0
+        Just expr -> eval expr @?= Right 10.0
         Nothing -> assertFailure "Parse failed"
   , "multiple mult" ~:
       TestCase $ case parseExpr (tokenize "2 * 3 * 4") of
-        Just expr -> eval expr @?= 24.0
+        Just expr -> eval expr @?= Right 24.0
         Nothing -> assertFailure "Parse failed"
   , "mult and div" ~:
       TestCase $ case parseExpr (tokenize "12 / 3 * 2") of
-        Just expr -> eval expr @?= 8.0
+        Just expr -> eval expr @?= Right 8.0
         Nothing -> assertFailure "Parse failed"
   , "complex precedence" ~:
       TestCase $ case parseExpr (tokenize "1 + 2 * 3 - 4 / 2") of
-        Just expr -> eval expr @?= 5.0
+        Just expr -> eval expr @?= Right 5.0
         Nothing -> assertFailure "Parse failed"
   , "all four operators" ~:
       TestCase $ case parseExpr (tokenize "100 - 20 + 5 * 4 / 2") of
-        Just expr -> eval expr @?= 90.0
+        Just expr -> eval expr @?= Right 90.0
         Nothing -> assertFailure "Parse failed"
   ]
 
@@ -390,27 +391,27 @@ testE2EAssociativity :: Test
 testE2EAssociativity = TestList
   [ "left assoc subtraction" ~:
       TestCase $ case parseExpr (tokenize "10 - 3 - 2") of
-        Just expr -> eval expr @?= 5.0
+        Just expr -> eval expr @?= Right 5.0
         Nothing -> assertFailure "Parse failed"
   , "left assoc division" ~:
       TestCase $ case parseExpr (tokenize "20 / 5 / 2") of
-        Just expr -> eval expr @?= 2.0
+        Just expr -> eval expr @?= Right 2.0
         Nothing -> assertFailure "Parse failed"
   , "triple subtraction" ~:
       TestCase $ case parseExpr (tokenize "100 - 30 - 20 - 10") of
-        Just expr -> eval expr @?= 40.0
+        Just expr -> eval expr @?= Right 40.0
         Nothing -> assertFailure "Parse failed"
   , "triple division" ~:
       TestCase $ case parseExpr (tokenize "100 / 10 / 5 / 2") of
-        Just expr -> eval expr @?= 1.0
+        Just expr -> eval expr @?= Right 1.0
         Nothing -> assertFailure "Parse failed"
   , "left assoc addition" ~:
       TestCase $ case parseExpr (tokenize "1 + 2 + 3 + 4") of
-        Just expr -> eval expr @?= 10.0
+        Just expr -> eval expr @?= Right 10.0
         Nothing -> assertFailure "Parse failed"
   , "left assoc multiplication" ~:
       TestCase $ case parseExpr (tokenize "2 * 3 * 4 * 5") of
-        Just expr -> eval expr @?= 120.0
+        Just expr -> eval expr @?= Right 120.0
         Nothing -> assertFailure "Parse failed"
   ]
 
@@ -419,35 +420,35 @@ testE2EParentheses :: Test
 testE2EParentheses = TestList
   [ "override precedence" ~:
       TestCase $ case parseExpr (tokenize "(2 + 3) * 4") of
-        Just expr -> eval expr @?= 20.0
+        Just expr -> eval expr @?= Right 20.0
         Nothing -> assertFailure "Parse failed"
   , "nested parens simple" ~:
       TestCase $ case parseExpr (tokenize "((5))") of
-        Just expr -> eval expr @?= 5.0
+        Just expr -> eval expr @?= Right 5.0
         Nothing -> assertFailure "Parse failed"
   , "nested with ops" ~:
       TestCase $ case parseExpr (tokenize "((2 + 3) * 4)") of
-        Just expr -> eval expr @?= 20.0
+        Just expr -> eval expr @?= Right 20.0
         Nothing -> assertFailure "Parse failed"
   , "multiple groups" ~:
       TestCase $ case parseExpr (tokenize "(5 + 3) * (2 + 1)") of
-        Just expr -> eval expr @?= 24.0
+        Just expr -> eval expr @?= Right 24.0
         Nothing -> assertFailure "Parse failed"
   , "nested subtraction" ~:
       TestCase $ case parseExpr (tokenize "10 - (3 - 1)") of
-        Just expr -> eval expr @?= 8.0
+        Just expr -> eval expr @?= Right 8.0
         Nothing -> assertFailure "Parse failed"
   , "complex nesting" ~:
       TestCase $ case parseExpr (tokenize "((2 + 3) * (4 + 5)) / ((1 + 1) * (2 + 2))") of
-        Just expr -> eval expr @?= 5.625
+        Just expr -> eval expr @?= Right 5.625
         Nothing -> assertFailure "Parse failed"
   , "deeply nested" ~:
       TestCase $ case parseExpr (tokenize "(((10 - 5) + 3) * 2)") of
-        Just expr -> eval expr @?= 16.0
+        Just expr -> eval expr @?= Right 16.0
         Nothing -> assertFailure "Parse failed"
   , "parens at start" ~:
       TestCase $ case parseExpr (tokenize "(10 + 20) / 5 + 3") of
-        Just expr -> eval expr @?= 9.0
+        Just expr -> eval expr @?= Right 9.0
         Nothing -> assertFailure "Parse failed"
   ]
 
@@ -456,41 +457,54 @@ testE2ERealWorld :: Test
 testE2ERealWorld = TestList
   [ "average of two numbers" ~:
       TestCase $ case parseExpr (tokenize "(10 + 20) / 2") of
-        Just expr -> eval expr @?= 15.0
+        Just expr -> eval expr @?= Right 15.0
         Nothing -> assertFailure "Parse failed"
   , "percentage calculation" ~:
       TestCase $ case parseExpr (tokenize "100 * 20 / 100") of
-        Just expr -> eval expr @?= 20.0
+        Just expr -> eval expr @?= Right 20.0
         Nothing -> assertFailure "Parse failed"
   , "profit calculation" ~:
       TestCase $ case parseExpr (tokenize "1000 - 600 - 150") of
-        Just expr -> eval expr @?= 250.0
+        Just expr -> eval expr @?= Right 250.0
         Nothing -> assertFailure "Parse failed"
   , "area calculation" ~:
       TestCase $ case parseExpr (tokenize "(10 + 20) * (5 + 5)") of
-        Just expr -> eval expr @?= 300.0
+        Just expr -> eval expr @?= Right 300.0
         Nothing -> assertFailure "Parse failed"
   , "temperature conversion" ~:
       TestCase $ case parseExpr (tokenize "(100 - 32) * 5 / 9") of
-        Just expr -> (abs (eval expr - 37.777) < 0.01) @? "Should be ~37.777"
+        Just expr -> case eval expr of
+            Right val -> (abs (val - 37.777) < 0.01) @? "Should be ~37.777"
+            Left err -> assertFailure ("Eval failed: " ++ err)
         Nothing -> assertFailure "Parse failed"
   , "compound interest" ~:
       TestCase $ case parseExpr (tokenize "1000 * (1 + 5 / 100)") of
-        Just expr -> eval expr @?= 1050.0
+        Just expr -> eval expr @?= Right 1050.0
         Nothing -> assertFailure "Parse failed"
   , "discount calculation" ~:
       TestCase $ case parseExpr (tokenize "500 - (500 * 20 / 100)") of
-        Just expr -> eval expr @?= 400.0
+        Just expr -> eval expr @?= Right 400.0
         Nothing -> assertFailure "Parse failed"
   , "tip calculation" ~:
       TestCase $ case parseExpr (tokenize "50 + (50 * 15 / 100)") of
-        Just expr -> eval expr @?= 57.5
+        Just expr -> eval expr @?= Right 57.5
         Nothing -> assertFailure "Parse failed"
   ]
 
 -- ============================================================================
 -- MAIN TEST RUNNER
 -- ============================================================================
+
+-- Helper function to combine Counts from multiple test runs
+combineCounts :: Counts -> Counts -> Counts
+combineCounts (Counts c1 t1 e1 f1) (Counts c2 t2 e2 f2) =
+  Counts (c1 + c2) (t1 + t2) (e1 + e2) (f1 + f2)
+
+-- Helper to run a test and return its counts without printing the summary
+runTestTTQuiet :: Test -> IO Counts
+runTestTTQuiet t = do
+  (counts, _) <- runTestText (PutText (\_ _ _ -> return ()) ()) t
+  return counts
 
 main :: IO ()
 main = do
@@ -501,72 +515,82 @@ main = do
 
   putStrLn "\n========== UNIT TESTS - TOKENIZER (30 tests) =========="
   putStrLn "\n[A] Basic Number Tokenization (8 tests)..."
-  runTestTT testTokenizerNumbers
+  c1 <- runTestTT testTokenizerNumbers
 
   putStrLn "\n[B] Negative Number Tokenization (6 tests)..."
-  runTestTT testTokenizerNegative
+  c2 <- runTestTT testTokenizerNegative
 
   putStrLn "\n[C] Operator Tokenization (4 tests)..."
-  runTestTT testTokenizerOperators
+  c3 <- runTestTT testTokenizerOperators
 
   putStrLn "\n[D] Parentheses Tokenization (5 tests)..."
-  runTestTT testTokenizerParens
+  c4 <- runTestTT testTokenizerParens
 
   putStrLn "\n[E] Whitespace Handling (4 tests)..."
-  runTestTT testTokenizerWhitespace
+  c5 <- runTestTT testTokenizerWhitespace
 
   putStrLn "\n[F] Complex Expression Tokenization (3 tests)..."
-  runTestTT testTokenizerComplex
+  c6 <- runTestTT testTokenizerComplex
 
   putStrLn "\n========== UNIT TESTS - PARSER (35 tests) =========="
   putStrLn "\n[A] Single Number Parsing (5 tests)..."
-  runTestTT testParserSingleNumber
+  c7 <- runTestTT testParserSingleNumber
 
   putStrLn "\n[B] Binary Operations Parsing (8 tests)..."
-  runTestTT testParserBinaryOps
+  c8 <- runTestTT testParserBinaryOps
 
   putStrLn "\n[C] Operator Precedence Parsing (6 tests)..."
-  runTestTT testParserPrecedence
+  c9 <- runTestTT testParserPrecedence
 
   putStrLn "\n[D] Parentheses Parsing (8 tests)..."
-  runTestTT testParserParentheses
+  c10 <- runTestTT testParserParentheses
 
   putStrLn "\n[E] Invalid Input Parsing (8 tests)..."
-  runTestTT testParserInvalid
+  c11 <- runTestTT testParserInvalid
 
   putStrLn "\n========== UNIT TESTS - EVALUATOR (25 tests) =========="
   putStrLn "\n[A] Addition Evaluation (5 tests)..."
-  runTestTT testEvalAddition
+  c12 <- runTestTT testEvalAddition
 
   putStrLn "\n[B] Subtraction Evaluation (5 tests)..."
-  runTestTT testEvalSubtraction
+  c13 <- runTestTT testEvalSubtraction
 
   putStrLn "\n[C] Multiplication Evaluation (5 tests)..."
-  runTestTT testEvalMultiplication
+  c14 <- runTestTT testEvalMultiplication
 
   putStrLn "\n[D] Division Evaluation (5 tests)..."
-  runTestTT testEvalDivision
+  c15 <- runTestTT testEvalDivision
 
   putStrLn "\n[E] Complex Nested Evaluation (5 tests)..."
-  runTestTT testEvalNested
+  c16 <- runTestTT testEvalNested
 
   putStrLn "\n========== END-TO-END TESTS (40 tests) =========="
   putStrLn "\n[A] Basic Calculations (10 tests)..."
-  runTestTT testE2EBasic
+  c17 <- runTestTT testE2EBasic
 
   putStrLn "\n[B] Precedence Tests (8 tests)..."
-  runTestTT testE2EPrecedence
+  c18 <- runTestTT testE2EPrecedence
 
   putStrLn "\n[C] Associativity Tests (6 tests)..."
-  runTestTT testE2EAssociativity
+  c19 <- runTestTT testE2EAssociativity
 
   putStrLn "\n[D] Parentheses Tests (8 tests)..."
-  runTestTT testE2EParentheses
+  c20 <- runTestTT testE2EParentheses
 
   putStrLn "\n[E] Real-World Calculations (8 tests)..."
-  runTestTT testE2ERealWorld
+  c21 <- runTestTT testE2ERealWorld
 
   putStrLn "\n=========================================="
   putStrLn "ALL 130 TESTS COMPLETED!"
   putStrLn "=========================================="
-  return ()
+
+  -- Combine all counts
+  let totalCounts = foldl1 combineCounts [c1, c2, c3, c4, c5, c6, c7, c8, c9, c10,
+                                           c11, c12, c13, c14, c15, c16, c17, c18,
+                                           c19, c20, c21]
+  
+  -- Exit with appropriate code based on test results
+  let (Counts _ _ errors failures) = totalCounts
+  if errors + failures > 0
+    then exitWith (ExitFailure 1)
+    else exitWith ExitSuccess
