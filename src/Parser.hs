@@ -2,7 +2,7 @@ module Parser where
 
 -- Expression data type
 data Expr = Num Double | Add Expr Expr | Sub Expr Expr | Mul Expr Expr | Div Expr Expr
-  deriving Show
+  deriving (Show)
 
 -- Parse tokens into an expression tree
 parseExpr :: [String] -> Maybe Expr
@@ -13,18 +13,20 @@ parseExpr ts = case parseAddSub ts of
 parseAddSub :: [String] -> Maybe (Expr, [String])
 parseAddSub ts = do
   (e, rest) <- parseMulDiv ts
-  case rest of
-    (op:rest') | op `elem` ["+", "-"] -> do
-      (e', rest'') <- parseAddSub rest'
-      return (if op == "+" then Add e e' else Sub e e', rest'')
-    _ -> return (e, rest)
+  parseMore e rest
+  where
+    parseMore e (op : ts') | op `elem` ["+", "-"] = do
+      (e2, rest2) <- parseMulDiv ts'
+      let newE = if op == "+" then Add e e2 else Sub e e2
+      parseMore newE rest2
+    parseMore e rest = Just (e, rest)
 
 parseMulDiv :: [String] -> Maybe (Expr, [String])
 parseMulDiv ts = do
   (e, rest) <- parseFactor ts
   parseMore e rest
   where
-    parseMore e (op:ts') | op `elem` ["*", "/"] = do
+    parseMore e (op : ts') | op `elem` ["*", "/"] = do
       (e2, rest2) <- parseFactor ts'
       let newE = if op == "*" then Mul e e2 else Div e e2
       parseMore newE rest2
@@ -32,9 +34,9 @@ parseMulDiv ts = do
 
 parseFactor :: [String] -> Maybe (Expr, [String])
 parseFactor [] = Nothing
-parseFactor ("(":ts) = do
-  (e, rest) <- parseAddSub ts  -- Changed from parseExpr to parseAddSub
+parseFactor ("(" : ts) = do
+  (e, rest) <- parseAddSub ts
   case rest of
-    (")":rest') -> return (e, rest')
+    (")" : rest') -> return (e, rest')
     _ -> Nothing
-parseFactor (t:ts) = Just (Num (read t), ts)
+parseFactor (t : ts) = Just (Num (read t), ts)
