@@ -39,4 +39,6 @@ parseFactor ("(" : ts) = do
   case rest of
     (")" : rest') -> return (e, rest')
     _ -> Nothing
-parseFactor (t : ts) = Just (Num (read t), ts)
+parseFactor (t : ts) = case reads t of
+  [(n, "")] -> Just (Num n, ts)
+  _ -> Nothing
