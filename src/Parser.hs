@@ -1,7 +1,7 @@
 module Parser where
 
 -- Expression data type
-data Expr = Num Double | Add Expr Expr | Sub Expr Expr | Mul Expr Expr | Div Expr Expr
+data Expr = Num Double | Add Expr Expr | Sub Expr Expr | Mul Expr Expr | Div Expr Expr | Pow Expr Expr
   deriving (Show)
 
 -- Parse tokens into an expression tree
@@ -23,11 +23,11 @@ parseAddSub ts = do
 
 parseMulDiv :: [String] -> Maybe (Expr, [String])
 parseMulDiv ts = do
-  (e, rest) <- parseFactor ts
+  (e, rest) <- parsePow ts
   parseMore e rest
   where
     parseMore e (op : ts') | op `elem` ["*", "/"] = do
-      (e2, rest2) <- parseFactor ts'
+      (e2, rest2) <- parsePow ts'
       let newE = if op == "*" then Mul e e2 else Div e e2
       parseMore newE rest2
     parseMore e rest = Just (e, rest)
@@ -42,3 +42,12 @@ parseFactor ("(" : ts) = do
 parseFactor (t : ts) = case reads t of
   [(n, "")] -> Just (Num n, ts)
   _ -> Nothing
+
+parsePow :: [String] -> Maybe (Expr, [String])
+parsePow ts = do
+    (base, rest) <- parseFactor ts
+    case rest of
+        ("^":ts') -> do
+            (expn, rest2) <- parsePow ts'   -- RIGHT-associative recursion
+            return (Pow base expn, rest2)
+        _ -> return (base, rest)
