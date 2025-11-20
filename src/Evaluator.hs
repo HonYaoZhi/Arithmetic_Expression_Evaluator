@@ -29,3 +29,8 @@ eval (Div a b) = do
         else do
             numerator <- eval a
             Right (numerator / denominator)
+
+eval (Pow a b) = do
+    x <- eval a
+    y <- eval b
+    Right (x ** y)

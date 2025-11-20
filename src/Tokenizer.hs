@@ -26,7 +26,7 @@ tokenize input = go True input
           in digits : go False rest
 
       -- Operators
-      | c `elem` "+-*/" = [c] : go True cs
+      | c `elem` "+-*/^" = [c] : go True cs
 
       -- Parentheses
       | c == '(' = "(" : go True cs
