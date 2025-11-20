@@ -16,13 +16,13 @@ tokenize input = go True input
 
       -- Numbers (including negative numbers)
       -- Case 1: negative number when '-' is followed by digit
-      | c == '-' && expectNumber && not (null cs) && isDigit (head cs) =
-          let (digits, rest) = span isDigit cs
+      | c == '-' && expectNumber && not (null cs) && (isDigit (head cs) || head cs == '.') =
+          let (digits, rest) = span isNumChar cs
           in ("-" ++ digits) : go False rest
 
-      -- Case 2: normal number
-      | isDigit c =
-          let (digits, rest) = span isDigit (c:cs)
+      -- Case 2: normal number (supports decimals)
+      | isDigit c || c == '.' =
+          let (digits, rest) = span isNumChar (c:cs)
           in digits : go False rest
 
       -- Operators
@@ -34,3 +34,6 @@ tokenize input = go True input
 
       -- Invalid character
       | otherwise = error ("Invalid character: " ++ [c])
+    
+    -- Helper to identify number characters
+    isNumChar ch = isDigit ch || ch == '.'
