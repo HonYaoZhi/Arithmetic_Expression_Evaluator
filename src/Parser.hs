@@ -15,10 +15,13 @@ parseAddSub ts = do
   (e, rest) <- parseMulDiv ts
   parseMore e rest
   where
-    parseMore e (op : ts') | op `elem` ["+", "-"] = do
+    -- Pattern match on each operator directly
+    parseMore e ("+" : ts') = do
       (e2, rest2) <- parseMulDiv ts'
-      let newE = if op == "+" then Add e e2 else Sub e e2
-      parseMore newE rest2
+      parseMore (Add e e2) rest2
+    parseMore e ("-" : ts') = do
+      (e2, rest2) <- parseMulDiv ts'
+      parseMore (Sub e e2) rest2
     parseMore e rest = Just (e, rest)
 
 parseMulDiv :: [String] -> Maybe (Expr, [String])
@@ -26,10 +29,13 @@ parseMulDiv ts = do
   (e, rest) <- parsePow ts
   parseMore e rest
   where
-    parseMore e (op : ts') | op `elem` ["*", "/"] = do
+    -- Pattern match on each operator directly
+    parseMore e ("*" : ts') = do
       (e2, rest2) <- parsePow ts'
-      let newE = if op == "*" then Mul e e2 else Div e e2
-      parseMore newE rest2
+      parseMore (Mul e e2) rest2
+    parseMore e ("/" : ts') = do
+      (e2, rest2) <- parsePow ts'
+      parseMore (Div e e2) rest2
     parseMore e rest = Just (e, rest)
 
 parseFactor :: [String] -> Maybe (Expr, [String])
@@ -45,9 +51,9 @@ parseFactor (t : ts) = case reads t of
 
 parsePow :: [String] -> Maybe (Expr, [String])
 parsePow ts = do
-    (base, rest) <- parseFactor ts
-    case rest of
-        ("^":ts') -> do
-            (expn, rest2) <- parsePow ts'   -- RIGHT-associative recursion
-            return (Pow base expn, rest2)
-        _ -> return (base, rest)
+  (base, rest) <- parseFactor ts
+  case rest of
+    ("^" : ts') -> do
+      (expn, rest2) <- parsePow ts' -- RIGHT-associative recursion
+      return (Pow base expn, rest2)
+    _ -> return (base, rest)
