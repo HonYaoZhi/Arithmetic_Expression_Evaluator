@@ -2,35 +2,28 @@ module Evaluator where
 
 import Parser
 
+-- Helper function: higher-order function that takes an operator
+-- This eliminates repetition for binary operations
+evalBinaryOp :: (Double -> Double -> Double) -> Expr -> Expr -> Either String Double
+evalBinaryOp op a b = do
+  x <- eval a
+  y <- eval b
+  Right (op x y)
+
 -- Evaluate the expression
 -- Returns Either an error message or the result
 eval :: Expr -> Either String Double
 eval (Num n) = Right n
-
-eval (Add a b) = do
-    x <- eval a
-    y <- eval b
-    Right (x + y)
-
-eval (Sub a b) = do
-    x <- eval a
-    y <- eval b
-    Right (x - y)
-
-eval (Mul a b) = do
-    x <- eval a
-    y <- eval b
-    Right (x * y)
-
+-- Using higher-order function for binary operations
+eval (Add a b) = evalBinaryOp (+) a b
+eval (Sub a b) = evalBinaryOp (-) a b
+eval (Mul a b) = evalBinaryOp (*) a b
+eval (Pow a b) = evalBinaryOp (**) a b
+-- Division needs special handling for zero check
 eval (Div a b) = do
-    denominator <- eval b
-    if denominator == 0
-        then Left "Error: Division by zero"
-        else do
-            numerator <- eval a
-            Right (numerator / denominator)
-
-eval (Pow a b) = do
-    x <- eval a
-    y <- eval b
-    Right (x ** y)
+  denominator <- eval b
+  if denominator == 0
+    then Left "Error: Division by zero"
+    else do
+      numerator <- eval a
+      Right (numerator / denominator)
