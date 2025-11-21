@@ -1,7 +1,14 @@
 module Parser where
 
--- Expression data type
-data Expr = Num Double | Add Expr Expr | Sub Expr Expr | Mul Expr Expr | Div Expr Expr | Pow Expr Expr
+-- Expression data type (combined into one)
+data Expr
+  = Num Double
+  | Add Expr Expr
+  | Sub Expr Expr
+  | Mul Expr Expr
+  | Div Expr Expr
+  | Pow Expr Expr
+  | Func String Expr
   deriving (Show)
 
 -- Parse tokens into an expression tree
@@ -38,6 +45,7 @@ parseMulDiv ts = do
       parseMore (Div e e2) rest2
     parseMore e rest = Just (e, rest)
 
+-- Combine number, function, and parentheses handling
 parseFactor :: [String] -> Maybe (Expr, [String])
 parseFactor [] = Nothing
 parseFactor ("(" : ts) = do
@@ -45,9 +53,18 @@ parseFactor ("(" : ts) = do
   case rest of
     (")" : rest') -> return (e, rest')
     _ -> Nothing
-parseFactor (t : ts) = case reads t of
-  [(n, "")] -> Just (Num n, ts)
-  _ -> Nothing
+
+-- Basic functions: sin, abs, sqrt
+parseFactor (t : ts)
+  | t `elem` ["sin","cos","tan", "abs", "sqrt"] = do
+      (arg, rest) <- parseFactor ts
+      return (Func t arg, rest)
+
+-- Number
+parseFactor (t : ts) =
+  case reads t of
+    [(n, "")] -> Just (Num n, ts)
+    _ -> Nothing
 
 parsePow :: [String] -> Maybe (Expr, [String])
 parsePow ts = do
