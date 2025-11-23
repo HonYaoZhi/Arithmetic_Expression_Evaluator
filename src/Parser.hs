@@ -45,27 +45,6 @@ parseMulDiv ts = do
       parseMore (Div e e2) rest2
     parseMore e rest = Just (e, rest)
 
--- Combine number, function, and parentheses handling
-parseFactor :: [String] -> Maybe (Expr, [String])
-parseFactor [] = Nothing
-parseFactor ("(" : ts) = do
-  (e, rest) <- parseAddSub ts
-  case rest of
-    (")" : rest') -> return (e, rest')
-    _ -> Nothing
-
--- Basic functions: sin, abs, sqrt
-parseFactor (t : ts)
-  | t `elem` ["sin","cos","tan", "abs", "sqrt"] = do
-      (arg, rest) <- parseFactor ts
-      return (Func t arg, rest)
-
--- Number
-parseFactor (t : ts) =
-  case reads t of
-    [(n, "")] -> Just (Num n, ts)
-    _ -> Nothing
-
 parsePow :: [String] -> Maybe (Expr, [String])
 parsePow ts = do
   (base, rest) <- parseFactor ts
@@ -74,3 +53,31 @@ parsePow ts = do
       (expn, rest2) <- parsePow ts' -- RIGHT-associative recursion
       return (Pow base expn, rest2)
     _ -> return (base, rest)
+
+-- Handle parentheses, function, unary minus and number 
+parseFactor :: [String] -> Maybe (Expr, [String])
+parseFactor [] = Nothing
+
+-- Parentheses
+parseFactor ("(" : ts) = do
+  (e, rest) <- parseAddSub ts
+  case rest of
+    (")" : rest') -> return (e, rest')
+    _ -> Nothing
+
+-- Basic functions: sin, cos, tan, abs, sqrt
+parseFactor (t : ts)
+  | t `elem` ["sin","cos","tan", "abs", "sqrt"] = do
+      (arg, rest) <- parseFactor ts
+      return (Func t arg, rest)
+
+-- Unary minus: -(expr)
+parseFactor ("-" : ts) = do
+  (e, rest) <- parseFactor ts
+  return (Mul (Num (-1)) e, rest)
+
+-- Number
+parseFactor (t : ts) =
+  case reads t of
+    [(n, "")] -> Just (Num n, ts)
+    _ -> Nothing

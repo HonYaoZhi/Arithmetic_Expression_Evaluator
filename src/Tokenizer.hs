@@ -6,7 +6,6 @@ import Data.Char (isDigit, isSpace, isAlpha)
 tokenize :: String -> [String]
 tokenize input = go True input
   where
-    -- go = recursive helper function with context tracking
     -- expectNumber: True if we're in a position where a number (possibly negative) is expected
     go _ [] = []
 
